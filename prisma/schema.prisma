@@ -1,0 +1,91 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model user {
+  id            String  @id @default(uuid())
+  user_name     String  @unique
+  names         String
+  last_names    String
+  email         String  @unique
+  password      String
+  session_token String?
+
+  tasks      task[]
+  assignment assignment[]
+}
+
+model project {
+  id          String   @id @default(uuid())
+  title       String   @db.VarChar(100)
+  description String   @db.VarChar(200)
+  status      String
+  progress    Decimal  @db.Decimal(10, 2)
+  start_date  DateTime
+  finish_date DateTime
+
+  tasks task[]
+}
+
+model task {
+  id              String    @id @default(uuid())
+  title           String    @db.VarChar(50)
+  status          String    @db.VarChar(10)
+  description     String    @db.VarChar(200)
+  created_at      DateTime? @default(now())
+  updated_at      DateTime? @updatedAt
+  completed_at    DateTime?
+  expiration_date DateTime
+  user_id         String
+  project_id      String
+
+  assignment assignment[]
+
+  task_to_project project @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  task_to_user    user    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model assignment {
+  id                 String   @id @default(uuid())
+  user_id            String
+  task_id            String
+  role_id            Int
+  date_of_assignment DateTime @default(now())
+
+  assignment_to_role role @relation(fields: [role_id], references: [id], onDelete: Cascade)
+  assignment_to_task task @relation(fields: [task_id], references: [id], onDelete: Cascade)
+  assignment_to_user user @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model role {
+  id   Int    @id
+  name String @unique
+
+  permission_role permission_role[]
+  assignment      assignment[]
+}
+
+model permission_role {
+  id            Int @id
+  role_id       Int
+  permission_id Int
+
+  permission_role_to_permission permission @relation(fields: [permission_id], references: [id], onDelete: Cascade)
+  permission_role_to_role       role       @relation(fields: [role_id], references: [id], onDelete: Cascade)
+}
+
+model permission {
+  id          Int    @id
+  name        String
+  description String?
+
+  permission_role permission_role[]
+}
